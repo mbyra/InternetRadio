@@ -1,13 +1,11 @@
-//
-// Created by marcin on 02.09.18.
-//
+#ifndef _ERR_
+#define _ERR_
 
-#ifndef INTERNETRADIOSIK_ERR_H
-#define INTERNETRADIOSIK_ERR_H
+/* wypisuje informacje o blednym zakonczeniu funkcji systemowej
+i konczy dzialanie */
+extern void syserr(const char *fmt, ...);
 
-#include <iostream>
+/* wypisuje informacje o bledzie i konczy dzialanie */
+extern void fatal(const char *fmt, ...);
 
-// Prints error message to stdout and terminates the program with code 1.
-void err(const char *message);
-
-#endif //INTERNETRADIOSIK_ERR_H
+#endif
