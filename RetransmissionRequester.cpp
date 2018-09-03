@@ -7,3 +7,7 @@
 void RetransmissionRequester::start() {
 
 }
+
+RetransmissionRequester::~RetransmissionRequester() {
+
+}

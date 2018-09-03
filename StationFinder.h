@@ -4,14 +4,17 @@
 #include <unistd.h>
 
 #include "Station.h"
+#include "Receiver.h"
 
+class Receiver;
 class RetransmissionRequester;
 
 class StationFinder {
+    friend class Receiver;
     friend class RetransmissionRequester;
 
 public:
-    ~StationFinder();
+
 
     // Main function of class: initializes sockets etc. and starts looking
     // for available stations after every given period of time, adding or
@@ -19,11 +22,15 @@ public:
     void start();
 
 private:
+    Receiver *receiver;
+
     int sock;
     struct sockaddr_in remoteAddress;
 
     long long fetchId = 0;
 
+    StationFinder(Receiver *receiver) : receiver(receiver) {};
+    ~StationFinder();
 
     // Creates udp socket used for scanning for transmitters. Sets options and
     // binds the socket.

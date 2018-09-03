@@ -1,5 +1,5 @@
 //
-// Created by marcin on 03.09.18.
+// Created by marcin on 02.09.18.
 //
 
 #ifndef INTERNETRADIOSIK_RECEIVER_H
@@ -29,6 +29,8 @@ class Receiver {
 public:
     // Main function of the receiver: initializes all four services.
     void start();
+    ~Receiver();
+
 
 private:
     // Here we declare all necessary variables and create class objects
@@ -38,25 +40,33 @@ private:
 
     // Vector in which objects representing stations (transmitters) are stored:
     std::vector<Station> stationList;
-    std::mutex stationListMutex;
+//    std::mutex stationListMutex;
+
     std::string preferredStation; // TODO assuming name uniquely defines station
 
-    std::string currentStation; // TODO assuming name uniquely defines station
-
+    std::string currentStation = ""; // TODO assuming name uniquely defines
+    // station
     bool isPlayingNow = false; // toggle play on/off
-    std::mutex playMutex;
+    std::mutex mut; // guards stationList, currentStation, isPlayingNow //
+    // TODO should I make two mutexes?
 
     // Object providing menu displaying and controlling:
-    MenuAgent menu;
+    MenuAgent *menu;
 
     // Object prividing requesting for available stations in network:
-    StationFinder finder;
+    StationFinder *finder;
 
     // Object providing requesting for retransmission:
-    RetransmissionRequester requester;
+    RetransmissionRequester *requester;
 
     // Object downloading data from transmitter:
-    DataDownloader downloader;
+    DataDownloader *downloader;
+
+    // Starts DataDownloader service.
+    void startDownloadingData();
+
+    // Creates services objects.
+    void initializeServices();
 };
 
 
