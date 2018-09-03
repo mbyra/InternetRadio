@@ -1,0 +1,48 @@
+#ifndef INTERNETRADIOSIK_STATIONFINDER_H
+#define INTERNETRADIOSIK_STATIONFINDER_H
+
+#include <unistd.h>
+
+#include "Station.h"
+
+class RetransmissionRequester;
+
+class StationFinder {
+    friend class RetransmissionRequester;
+
+public:
+    ~StationFinder();
+
+    // Main function of class: initializes sockets etc. and starts looking
+    // for available stations after every given period of time, adding or
+    // deleting them from list if necessary.
+    void start();
+
+private:
+    int sock;
+    struct sockaddr_in remoteAddress;
+
+    long long fetchId = 0;
+
+
+    // Creates udp socket used for scanning for transmitters. Sets options and
+    // binds the socket.
+    // Based on scenario 09 from labs - multi-send.c
+    void initCtrlSocket();
+
+    // In infinite loop, does a periodic lookup for available stations and adds
+    // them to the list. Removes unavailable stations from list.
+    void searchStationService();
+
+    // In ininite loop, parses every reply from transmitters who were asked for
+    // available stations in network. Removes unavailable stations from list.
+    void replyParserService();
+
+    // Main function of class: initializes socket and runs
+    // searchStationService() and replyParser() in separate threads.
+
+
+};
+
+
+#endif //INTERNETRADIOSIK_STATIONFINDER_H

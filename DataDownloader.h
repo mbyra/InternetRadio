@@ -1,0 +1,14 @@
+//
+// Created by marcin on 03.09.18.
+//
+
+#ifndef INTERNETRADIOSIK_DATADOWNLOADER_H
+#define INTERNETRADIOSIK_DATADOWNLOADER_H
+
+
+class DataDownloader {
+
+};
+
+
+#endif //INTERNETRADIOSIK_DATADOWNLOADER_H

@@ -8,14 +8,15 @@
 #include <cassert>
 #include <csignal>
 #include <ctime>
+#include <mutex>
 
 #include "err.h"
 #include "parameters.h"
-#include "Buffer.h"
-#include "Menu.h"
+#include "Receiver.h"
+
 
 // ***** Global variables *********************
-Menu menu(); // shared accross clients
+MenuAgent menu(); // shared accross clients
 
 // ********************************************
 
@@ -226,31 +227,36 @@ void play() {
 int main(int argc, char **argv) {
     parse(argc, argv);
 
-    Buffer buffer; // IO buffer handling reading and writing data from socket
-    Menu menu; // "Menu" displayed in ui, knowing list of stations (and current)
-
-    // Create socket for scanning for transmitters, set options and bind:
-    int ctrl_socket = init_ctrl_socket();
-
-    // Create three services:
-    pthread_t threads[3];
-    // 1. Takes care of user interface:
-    pthread_create(&threads[0], nullptr, ui_thread_func, nullptr);
-    // 2. Writes to buffer:
-    pthread_create(&threads[1], nullptr, buff_write_thread_func, nullptr);
-    // 3. Reads from buffer:
-    pthread_create(&threads[2], nullptr, buff_read_thread_func, nullptr);
-
-    // Create inter process' interval timer used e.g. for retransmission or ui
-    // refresh and set appropiate events and timer specification:
-    set_process_timer(ctrl_socket);
+    Receiver receiver;
+    receiver.start();
 
 
-    // Start playing radio according to currently choosen station.
-    play();
 
-
-    close (ctrl_socket);
+//    Buffer buffer; // IO buffer handling reading and writing data from socket
+//    MenuAgent menu; // "MenuAgent" displayed in ui, knowing list of stations (and current)
+//
+//    // Create socket for scanning for transmitters, set options and bind:
+//    int ctrl_socket = init_ctrl_socket();
+//
+//    // Create three services:
+//    pthread_t threads[3];
+//    // 1. Takes care of user interface:
+//    pthread_create(&threads[0], nullptr, ui_thread_func, nullptr);
+//    // 2. Writes to buffer:
+//    pthread_create(&threads[1], nullptr, buff_write_thread_func, nullptr);
+//    // 3. Reads from buffer:
+//    pthread_create(&threads[2], nullptr, buff_read_thread_func, nullptr);
+//
+//    // Create inter process' interval timer used e.g. for retransmission or ui
+//    // refresh and set appropiate events and timer specification:
+//    set_process_timer(ctrl_socket);
+//
+//
+//    // Start playing radio according to currently choosen station.
+//    play();
+//
+//
+//    close (ctrl_socket);
 
     return 0;
 }

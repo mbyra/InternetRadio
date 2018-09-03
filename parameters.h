@@ -15,7 +15,8 @@ extern std::string NAME;
 
 const int myIndex = 347056; // used to generate default values of flags
 const int MAX_STATION_NAME = 64;
-const int TTL_VALUE = 4;
+const int TTL_VALUE = 60;
+const int LOOKUP_INTERVAL = 5; // time between subsequent station lookups
 
 
 
