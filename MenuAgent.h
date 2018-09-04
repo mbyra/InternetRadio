@@ -28,7 +28,7 @@ class MenuAgent {
 private:
     Receiver* receiver;
 
-    pollfd client[MAX_OPEN_SOCKETS]; // TODO maybe a little fewer?
+    pollfd client[MAX_OPEN_SOCKETS];
     std::mutex clientMutex;
 
     // Change client state (during 'reading' his command) according to character
@@ -52,6 +52,13 @@ private:
     // Initialize, set options, addresses and bind.
     void initializeMenuSocket();
 
+    // Also set current station to first available if not defined.
+    void changeCurrentStation(State cmd);
+
+    // Functions below assume you have clientMutex locked outside them:
+
+    // Write's to all clients' telnets refreshed menu list.
+    void refreshClientsMenu();
     // Write to client's telnet clear screen command.
     void telnetSendClearScreen(int sock);
 
@@ -60,11 +67,6 @@ private:
 
     // Display menu to client's telnet (identified by socket).
     void telnetSendMenu(int sock);
-
-    // Write's to all clients' telnets refreshed menu list.
-    void refreshClientsMenu();
-
-    void changeCurrentStation(State cmd);
 
 };
 

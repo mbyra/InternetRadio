@@ -15,26 +15,27 @@
 void MenuAgent::start() {
     initializeMenuSocket();
 
-    sockaddr_in server;
-    server.sin_family = AF_INET;
-    server.sin_addr.s_addr = htonl(INADDR_ANY);
-    server.sin_port = htons(UI_PORT);
-    Station s("Stacja nr 1", "249.000.000.001", server, 17000, 12);
-    receiver->stationList.push_back(s);
-
-    sockaddr_in server2;
-    server2.sin_family = AF_INET;
-    server2.sin_addr.s_addr = htonl(INADDR_ANY);
-    server2.sin_port = htons(UI_PORT);
-    Station s2("Stacja nr 2", "249.000.000.001", server2, 17000, 12);
-    receiver->stationList.push_back(s2);
-
-    sockaddr_in server3;
-    server3.sin_family = AF_INET;
-    server3.sin_addr.s_addr = htonl(INADDR_ANY);
-    server3.sin_port = htons(UI_PORT);
-    Station s3("Stacja nr 3", "249.000.000.001", server3, 17000, 12);
-    receiver->stationList.push_back(s3);
+    //FOR TESTING:
+//    sockaddr_in server;
+//    server.sin_family = AF_INET;
+//    server.sin_addr.s_addr = htonl(INADDR_ANY);
+//    server.sin_port = htons(UI_PORT);
+//    Station s("Stacja nr 1", "249.000.000.001", server, 17000, 12);
+//    receiver->stationList.push_back(s);
+//
+//    sockaddr_in server2;
+//    server2.sin_family = AF_INET;
+//    server2.sin_addr.s_addr = htonl(INADDR_ANY);
+//    server2.sin_port = htons(UI_PORT);
+//    Station s2("Stacja nr 2", "249.000.000.001", server2, 17000, 12);
+//    receiver->stationList.push_back(s2);
+//
+//    sockaddr_in server3;
+//    server3.sin_family = AF_INET;
+//    server3.sin_addr.s_addr = htonl(INADDR_ANY);
+//    server3.sin_port = htons(UI_PORT);
+//    Station s3("Stacja nr 3", "249.000.000.001", server3, 17000, 12);
+//    receiver->stationList.push_back(s3);
 
     /* Zapraszamy klientów */
     if (listen(client[0].fd, 5) == -1) {
@@ -93,12 +94,10 @@ void MenuAgent::start() {
                         executeClientCommand(i, buf[0]);
 
                         if(clientState[i] == UP) {
-                            std::cerr << "Client clicket UP" << std::endl;
                             changeCurrentStation(UP);
                             refreshClientsMenu();
                             clientState[i] = START;
                         } else if (clientState[i] == DOWN) {
-                            std::cerr << "Client clicket DOWN" << std::endl;
                             changeCurrentStation(DOWN);
                             refreshClientsMenu();
                             clientState[i] = START;
@@ -198,7 +197,7 @@ void MenuAgent::telnetSendMenu(int sock) {
     // stations with indicator:
     receiver->mut.lock();
 
-    if(NAME.empty() and receiver->currentStation.empty() and not receiver->stationList.empty())
+    if(PREFERRED_STATION.empty() and receiver->currentStation.empty() and not receiver->stationList.empty())
         receiver->currentStation = receiver->stationList.begin()->station_name;
     for (auto station : receiver->stationList) {
         if (station.station_name == receiver->currentStation)

@@ -1,3 +1,7 @@
+//
+// Created by marcin on 02.09.18.
+//
+
 #include "StationFinder.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -6,10 +10,10 @@
 #include "err.h"
 #include "parameters.h"
 #include <fcntl.h>
+#include <cstring>
+#include <cassert>
+#include <sstream>
 
-StationFinder::~StationFinder() {
-    close(sock);
-}
 
 // Creates udp socket used for scanning for transmitters. Sets options and
 // binds the socket.
@@ -43,36 +47,131 @@ void StationFinder::initCtrlSocket() {
 //        syserr("setsockopt loop");
 
     /* podpięcie się pod lokalny adres i port */
-    remoteAddress.sin_family = AF_INET;
-    remoteAddress.sin_port = htons(CTRL_PORT);
-    if (inet_aton(DISCOVER_ADDR.c_str(), &remoteAddress.sin_addr) == 0)
+    receiverAddress.sin_family = AF_INET;
+    receiverAddress.sin_port = htons(CTRL_PORT);
+    if (inet_aton(DISCOVER_ADDR.c_str(), &receiverAddress.sin_addr) == 0)
         syserr("inet_aton");
-
-//    if (bind(sock, (struct sockaddr *)&local_address, sizeof local_address) < 0)
-//        syserr("bind");
-
-//    return sock;
 
 }
 
 
-//
 void StationFinder::searchStationService() {
 
+    const char* buf = LOOKUP_MESSAGE.c_str();
+    while (true) {
+        // Laboratory 05: echo-client.c
+        auto snd_len = sendto(sock, buf, strlen(buf), 0, (struct sockaddr *)
+                &receiverAddress, sizeof(receiverAddress));
+        if (snd_len != (ssize_t) strlen(buf)) {
+            syserr("partial / failed write");
+        }
+
+        receiver->mut.lock();
+
+        auto iter = receiver->stationList.begin();
+        while (iter != receiver->stationList.end()) {
+            // If last contact was over 20s ago, remove station from list.
+            if (std::chrono::duration_cast<std::chrono::seconds>
+                    (iter->lastContactTime - std::chrono::system_clock::now())
+                    >= std::chrono::seconds(STATION_DELETION_TIME)) {
+
+                // If removed station is current, unset currentStation
+                if(receiver->currentStation == iter->station_name)
+                    receiver->currentStation = "";
+
+                auto next = iter++;
+                assert(next != iter); // I dont remember if the ++ place matters
+                receiver->stationList.erase(iter);
+            }
+            else {
+                iter++;
+            }
+        }
+
+        receiver->mut.unlock();
+
+        std::this_thread::sleep_for(std::chrono::seconds(LOOKUP_INTERVAL));
+    }
 
 }
 
 void StationFinder::replyParserService() {
+    while(true) {
+        char buf[500];
+        struct sockaddr_in currentTransmitter;
+        auto rcva_len = (socklen_t) sizeof(currentTransmitter);
+
+        // Receive message from first transmitter trying to contact:
+        ssize_t length;
+        if ((length = recvfrom(sock, buf, 500, 0, (struct sockaddr *)
+                &currentTransmitter,
+                     &rcva_len)) < 0)
+            syserr("Error while recvfrom");
+
+        // Parse this message:
+        std::istringstream ss(std::string(buf, rcva_len));
+        std::string s;
+        ss >> s;
+        if (s == REPLY_MESSAGE) {
+            std::string address, port_str, name;
+            ss >> address >> port_str >> name;
+            int port;
+            try {
+                port = std::stoi(port_str);
+            } catch (std::exception &e) {
+                continue; // We must do everything not to crash the receiver
+            }
+
+            // Task description states that name can contain spaces, so we
+            // continue do add spaces to 'name' and next parts from ss.
+            while(ss >> s)
+                name += " " + s;
+
+            // Now 'name' contains name of existing or new station.
+            receiver->mut.lock();
+            auto iter = receiver->stationList.begin();
+            for (;iter != receiver->stationList.end(); iter++) {
+                if (iter->station_name == name) {
+                    // We have this station so lets just update lastContactTime
+                    iter->lastContactTime = std::chrono::system_clock::now();
+                    break;
+                }
+            }
+
+            if (iter == receiver->stationList.end()) {
+                // Name represents new station. Lets add it to list.
+                currentTransmitter.sin_port = htons(CTRL_PORT);
+                Station s(name, address, currentTransmitter, port);
+                receiver->stationList.push_back(s);
+            }
+
+            // If preferred station was given as argument, receiver starts to
+            // play it whenever discovered.
+            if(PREFERRED_STATION == name) {
+                receiver->currentStation == name;
+
+                if (!receiver->isPlayingNow) {
+                    std::thread t([this]() {receiver->startDownloadingData();});
+                    t.detach();
+                }
+            }
+            receiver->mut.unlock();
+
+            receiver->menu->clientMutex.lock();
+            receiver->menu->refreshClientsMenu(); // TODO maybe it should be done periodically
+            receiver->menu->clientMutex.unlock();
+        }
+    }
 
 }
 
 void StationFinder::start() {
     initCtrlSocket();
 
-    // run searchStation service in separate thread
-    std::thread searchStationServiceThread([this]() {searchStationService(); });
-    searchStationServiceThread.detach();
+    // run replyParser service in separate thread
+    std::thread replyParserServiceThread([this]() {replyParserService(); });
+    replyParserServiceThread.detach();
 
-    // in current thread run replyParser service
-    replyParserService();
+    // in current thread run searchStation service
+    searchStationService();
 }

@@ -40,9 +40,6 @@ private:
 
     // Vector in which objects representing stations (transmitters) are stored:
     std::vector<Station> stationList;
-//    std::mutex stationListMutex;
-
-    std::string preferredStation; // TODO assuming name uniquely defines station
 
     std::string currentStation = ""; // TODO assuming name uniquely defines
     // station
@@ -67,6 +64,8 @@ private:
 
     // Creates services objects.
     void initializeServices();
+
+
 };
 
 

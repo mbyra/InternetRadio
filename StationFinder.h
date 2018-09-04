@@ -1,3 +1,7 @@
+//
+// Created by marcin on 02.09.18.
+//
+
 #ifndef INTERNETRADIOSIK_STATIONFINDER_H
 #define INTERNETRADIOSIK_STATIONFINDER_H
 
@@ -14,23 +18,26 @@ class StationFinder {
     friend class RetransmissionRequester;
 
 public:
-
-
     // Main function of class: initializes sockets etc. and starts looking
     // for available stations after every given period of time, adding or
-    // deleting them from list if necessary.
+    // deleting them from list if necessary: one thread periodically sends
+    // requests for all available stations and second thread parses
+    // transmitters' replies in infinite loop (and applies some actions
+    // accordingly).
     void start();
 
 private:
     Receiver *receiver;
 
     int sock;
-    struct sockaddr_in remoteAddress;
+    struct sockaddr_in receiverAddress;
 
     long long fetchId = 0;
 
     StationFinder(Receiver *receiver) : receiver(receiver) {};
-    ~StationFinder();
+    ~StationFinder() {
+        close(sock);
+    };
 
     // Creates udp socket used for scanning for transmitters. Sets options and
     // binds the socket.

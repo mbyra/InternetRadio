@@ -31,7 +31,7 @@ void diagnose() {
               "UI_PORT: " << UI_PORT << std::endl <<
               "BSIZE: " << BSIZE << std::endl <<
               "RTIME: " << RTIME << std::endl <<
-              "NAME : " << NAME << std::endl;
+              "PREFERRED_STATION : " << PREFERRED_STATION << std::endl;
 }
 
 // Checks if string contains unsigned integer. If so, returns it.
@@ -108,7 +108,7 @@ void parse(int argc, char **argv) {
                             MAX_STATION_NAME);
                     fatal(message);
                 }
-                NAME = optarg;
+                PREFERRED_STATION = optarg;
                 break;
             default:
                 assert(true);
