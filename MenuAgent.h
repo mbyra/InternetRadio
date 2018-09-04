@@ -68,6 +68,10 @@ private:
     // Display menu to client's telnet (identified by socket).
     void telnetSendMenu(int sock);
 
+    // If stationList is not empty, sets first element of stationList as
+    // currentStation and returns true.
+    // Otherwise, returns false.
+    bool setFirstStationAsCurrent();
 };
 
 

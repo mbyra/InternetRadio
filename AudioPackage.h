@@ -5,7 +5,7 @@
 #include <cstdint>
 
 // Class containing single audio package, exactly from task description pdf.
-class AudioPackage {
+struct AudioPackage { // struct, not class, to make fields public
     uint64_t session_id;
     uint64_t first_byte_num;
     std::string audio_data; // Raw data stored as characters.

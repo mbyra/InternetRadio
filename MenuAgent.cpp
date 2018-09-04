@@ -15,27 +15,27 @@
 void MenuAgent::start() {
     initializeMenuSocket();
 
-    //FOR TESTING:
-//    sockaddr_in server;
-//    server.sin_family = AF_INET;
-//    server.sin_addr.s_addr = htonl(INADDR_ANY);
-//    server.sin_port = htons(UI_PORT);
-//    Station s("Stacja nr 1", "249.000.000.001", server, 17000, 12);
-//    receiver->stationList.push_back(s);
-//
-//    sockaddr_in server2;
-//    server2.sin_family = AF_INET;
-//    server2.sin_addr.s_addr = htonl(INADDR_ANY);
-//    server2.sin_port = htons(UI_PORT);
-//    Station s2("Stacja nr 2", "249.000.000.001", server2, 17000, 12);
-//    receiver->stationList.push_back(s2);
-//
-//    sockaddr_in server3;
-//    server3.sin_family = AF_INET;
-//    server3.sin_addr.s_addr = htonl(INADDR_ANY);
-//    server3.sin_port = htons(UI_PORT);
-//    Station s3("Stacja nr 3", "249.000.000.001", server3, 17000, 12);
-//    receiver->stationList.push_back(s3);
+//    FOR TESTING:
+    sockaddr_in server;
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = htonl(INADDR_ANY);
+    server.sin_port = htons(UI_PORT);
+    Station s("Stacja nr 1", "249.000.000.001", server, 17000);
+    receiver->stationList.push_back(s);
+
+    sockaddr_in server2;
+    server2.sin_family = AF_INET;
+    server2.sin_addr.s_addr = htonl(INADDR_ANY);
+    server2.sin_port = htons(UI_PORT);
+    Station s2("Stacja nr 2", "249.000.000.001", server2, 17000);
+    receiver->stationList.push_back(s2);
+
+    sockaddr_in server3;
+    server3.sin_family = AF_INET;
+    server3.sin_addr.s_addr = htonl(INADDR_ANY);
+    server3.sin_port = htons(UI_PORT);
+    Station s3("Stacja nr 3", "249.000.000.001", server3, 17000);
+    receiver->stationList.push_back(s3);
 
     /* Zapraszamy klientów */
     if (listen(client[0].fd, 5) == -1) {
@@ -46,6 +46,9 @@ void MenuAgent::start() {
     int activeClients = 0;
 
     do {
+        if(not receiver->stationIsSet)
+            setFirstStationAsCurrent();
+
         for (int i = 0; i < MAX_OPEN_SOCKETS; ++i)
             client[i].revents = 0;
 
@@ -197,13 +200,16 @@ void MenuAgent::telnetSendMenu(int sock) {
     // stations with indicator:
     receiver->mut.lock();
 
-    if(PREFERRED_STATION.empty() and receiver->currentStation.empty() and not receiver->stationList.empty())
-        receiver->currentStation = receiver->stationList.begin()->station_name;
-    for (auto station : receiver->stationList) {
-        if (station.station_name == receiver->currentStation)
-            ss << "  > " << station.station_name << "\r\n";
+    // If there is no currently chosen station, choose the first one.
+    if(not receiver->stationIsSet)
+        setFirstStationAsCurrent();
+
+    for (auto iter = receiver->stationList.begin();
+                                iter != receiver->stationList.end(); iter++) {
+        if (iter == receiver->currentStation)
+            ss << "  > " << iter->stationName << "\r\n";
         else
-            ss << "    " << station.station_name << "\r\n";
+            ss << "    " << iter->stationName << "\r\n";
     }
     receiver->mut.unlock();
 
@@ -248,29 +254,25 @@ void MenuAgent::refreshClientsMenu() {
 void MenuAgent::changeCurrentStation(State cmd) {
     receiver->mut.lock();
 
-    // TODO change to not assume station names are unique and identify station!
+    // If current station is not selected try to set first station from list
+    // as current.
+    if(not receiver->stationIsSet)
+        setFirstStationAsCurrent();
 
-    // If current station is not selected or there is 0 or 1 station on list,
-    // it is not possible to change station..
-    if (/*not(receiver->currentStation.empty() or */receiver->stationList
-    .size() > 1/*)*/) {
+    // It is possible to change the station only if stationList is longer than 1
+    if (receiver->stationList.size() > 1) {
         // iterate over stations to find current station
         for (auto iter = receiver->stationList.begin();
-                iter != receiver->stationList.end(); iter++) {
-            if ((*iter).station_name == receiver->currentStation
-                or receiver->currentStation.empty()) {
+                                iter != receiver->stationList.end(); iter++) {
+            if (iter == receiver->currentStation) {
                 switch (cmd) {
                     case UP:
-                        if (iter->station_name != receiver->stationList.begin()->station_name)
-                            receiver->currentStation = (--iter)->station_name;
-                        else if (receiver->currentStation.empty())
-                            receiver->currentStation = iter->station_name;
+                        if (iter->stationName != receiver->stationList.begin()->stationName)
+                            receiver->currentStation = --iter;
                         break;
                     case DOWN:
-                        if (iter->station_name != receiver->stationList.rbegin()->station_name)
-                            receiver->currentStation = (++iter)->station_name;
-                        else if (receiver->currentStation.empty())
-                            receiver->currentStation = iter->station_name;
+                        if (iter->stationName != receiver->stationList.rbegin()->stationName)
+                            receiver->currentStation = ++iter;
                         break;
                     default:
                         assert(true);
@@ -283,4 +285,13 @@ void MenuAgent::changeCurrentStation(State cmd) {
 
     receiver->mut.unlock();
 
+}
+
+bool MenuAgent::setFirstStationAsCurrent() {
+    if(not receiver->stationList.empty()) {
+        receiver->currentStation = receiver->stationList.begin();
+        receiver->stationIsSet = true;
+        return true;
+    }
+    return false;
 }

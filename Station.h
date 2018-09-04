@@ -14,20 +14,20 @@ class Station {
 
 
 public:
-    std::string station_name;
-    std::string miracast_address; // Transmitter's broadcast address.
-    struct sockaddr_in transmitter_address; // Transmitter's streaming address.
-    int transmitter_port; // Transmitter's streaming port.
+    std::string stationName;
+    std::string mcastAddress; // Transmitter's broadcast address.
+    struct sockaddr_in transmitterAddress; // Transmitter's streaming address.
+    int transmitterPort; // Transmitter's streaming port.
     std::chrono::time_point<std::chrono::system_clock> lastContactTime;
 
-    Station(const std::string station_name,
-            const std::string miracast_address,
-            const sockaddr_in &transmitter_address,
-            int transmitter_port)
-                        :  station_name(station_name),
-                           miracast_address(miracast_address),
-                           transmitter_address(transmitter_address),
-                           transmitter_port(transmitter_port),
+    Station(const std::string stationName,
+            const std::string mcastAddress,
+            const sockaddr_in &transmitterAddress,
+            int transmitterPort)
+                        :  stationName(stationName),
+                           mcastAddress(mcastAddress),
+                           transmitterAddress(transmitterAddress),
+                           transmitterPort(transmitterPort),
                            lastContactTime(std::chrono::system_clock::now()) {}
 };
 

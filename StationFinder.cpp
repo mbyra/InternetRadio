@@ -54,7 +54,6 @@ void StationFinder::initCtrlSocket() {
 
 }
 
-
 void StationFinder::searchStationService() {
 
     const char* buf = LOOKUP_MESSAGE.c_str();
@@ -76,8 +75,11 @@ void StationFinder::searchStationService() {
                     >= std::chrono::seconds(STATION_DELETION_TIME)) {
 
                 // If removed station is current, unset currentStation
-                if(receiver->currentStation == iter->station_name)
-                    receiver->currentStation = "";
+                if(receiver->currentStation == iter) {
+//                    receiver->currentStation;
+                    receiver->stationIsSet = false;
+                }
+
 
                 auto next = iter++;
                 assert(next != iter); // I dont remember if the ++ place matters
@@ -131,7 +133,7 @@ void StationFinder::replyParserService() {
             receiver->mut.lock();
             auto iter = receiver->stationList.begin();
             for (;iter != receiver->stationList.end(); iter++) {
-                if (iter->station_name == name) {
+                if (iter->stationName == name) {
                     // We have this station so lets just update lastContactTime
                     iter->lastContactTime = std::chrono::system_clock::now();
                     break;
@@ -141,14 +143,24 @@ void StationFinder::replyParserService() {
             if (iter == receiver->stationList.end()) {
                 // Name represents new station. Lets add it to list.
                 currentTransmitter.sin_port = htons(CTRL_PORT);
-                Station s(name, address, currentTransmitter, port);
-                receiver->stationList.push_back(s);
+                Station station(name, address, currentTransmitter, port);
+                receiver->stationList.push_back(station);
             }
 
             // If preferred station was given as argument, receiver starts to
             // play it whenever discovered.
             if(PREFERRED_STATION == name) {
-                receiver->currentStation == name;
+                auto iter = receiver->stationList.begin();
+                for(; iter != receiver->stationList.end(); iter++) {
+                    if(iter->stationName == name) {
+                        receiver->currentStation = iter;
+                        receiver->stationIsSet = true;
+                        break;
+                    }
+                }
+                // The station MUST be now on list and if clause entered
+                assert(iter != receiver->stationList.end());
+
 
                 if (!receiver->isPlayingNow) {
                     std::thread t([this]() {receiver->startDownloadingData();});

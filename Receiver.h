@@ -20,6 +20,14 @@ class RetransmissionRequester;
 class StationFinder;
 class DataDownloader;
 
+
+// DataDownloader must know in manny places what to do: play on, reset etc.
+enum ReceiverState {
+    STANDARD,
+    STATION_CHANGED,
+    STATION_NOT_SET,
+};
+
 class Receiver {
     friend class MenuAgent;
     friend class RetransmissionRequester;
@@ -39,13 +47,18 @@ private:
     // own threads.
 
     // Vector in which objects representing stations (transmitters) are stored:
-    std::vector<Station> stationList;
+    std::list<Station> stationList;
 
-    std::string currentStation = ""; // TODO assuming name uniquely defines
-    // station
+    // Pointer to current
+    std::list<Station, std::allocator<Station>>::iterator currentStation; // TODO assuming name uniquely defines
+    bool stationIsSet = false;
     bool isPlayingNow = false; // toggle play on/off
     std::mutex mut; // guards stationList, currentStation, isPlayingNow //
     // TODO should I make two mutexes?
+
+
+    ReceiverState state = STATION_NOT_SET;
+
 
     // Object providing menu displaying and controlling:
     MenuAgent *menu;
@@ -67,6 +80,7 @@ private:
 
 
 };
+
 
 
 #endif //INTERNETRADIOSIK_RECEIVER_H
