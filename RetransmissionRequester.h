@@ -1,5 +1,5 @@
 //
-// Created by marcin on 04.09.18.
+// Created by marcin on 05.09.18.
 //
 
 #ifndef INTERNETRADIOSIK_RETRANSMISSIONREQUESTER_H
@@ -10,6 +10,7 @@
 #include <list>
 #include <mutex>
 #include <set>
+#include <sstream>
 
 class Receiver;
 class DataDownloader;
@@ -38,14 +39,19 @@ private:
     std::mutex mut; // Ensures exclusive access to requests container.
 
 
-
     // Main method of class: starts service sending retransmission requests
     // every RTIME miliseconds.
     void start();
 
-    void clearRequests();
-};
+    // Method used to transform list of numbers (missing packages' first
+    // bytes) in the list to form of comma-separated string, accepted by
+    // transmitter. At the beggining of string there is RETRANSMIT_MESSAGE.
+    std::string createRequestPackagesMessage(std::list<uint64_t> list);
 
+    // Removes unnecessary packages from request list (for example, too old
+    // to be useful or already retrieved.
+    std::list<uint64_t> removeUnnecessaryPackages(std::list<uint64_t> list);
+};
 
 
 #endif //INTERNETRADIOSIK_RETRANSMISSIONREQUESTER_H

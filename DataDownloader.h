@@ -7,16 +7,17 @@
 
 #include "Receiver.h"
 #include "AudioPackage.h"
+#include "RetransmissionRequester.h"
 #include <string>
 #include <mutex>
 
 
 class Receiver;
-class RetransmissionRequestSender;
+class RetransmissionRequester;
 
 class DataDownloader {
     friend class Receiver;
-    friend class RetransmissionRequestSender;
+    friend class RetransmissionRequester;
 
 private:
     Receiver *receiver;

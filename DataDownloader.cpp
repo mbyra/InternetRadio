@@ -73,7 +73,7 @@ void DataDownloader::restartDownloader() {
     }
 
     receiver->requester->mut.lock();
-    receiver->requester->clearRequests();
+    receiver->requester->requests.clear();
     receiver->requester->mut.unlock();
 
     bufferMutex.lock();
@@ -85,15 +85,6 @@ void DataDownloader::restartDownloader() {
     receiver->mut.unlock();
 }
 
-std::string createCommaStringFromList(std::list<uint64_t> list) {
-    std::stringstream ss;
-    for(auto element : list)
-        ss << element << ',';
-
-    std::string s = ss.str();
-    // remove last comma:
-    return s.substr(0, s.size() - 1);
-}
 
 
 void DataDownloader::addRetransmissionRequestOfMissingPackages(AudioPackage ap) {
