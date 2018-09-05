@@ -114,7 +114,7 @@ void parse(int argc, char **argv) {
                     , argv[0]);
         }
 
-    diagnose();
+//    diagnose();
 }
 
 
@@ -125,8 +125,12 @@ void parse(int argc, char **argv) {
 int main(int argc, char **argv) {
     parse(argc, argv);
 
+    debug("Sender: after parse");
+
     Transmitter transmitter;
     transmitter.start();
+
+    debug("Just before return");
 
     return 0;
 }

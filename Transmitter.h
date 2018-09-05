@@ -14,6 +14,7 @@
 #include "Sender.h"
 #include "RequestGatherer.h"
 #include "RetransmissionSender.h"
+#include "err.h"
 
 class Sender;
 class RequestGatherer;
@@ -61,19 +62,28 @@ public:
     // Main function of the class. Starts all services in infinite loops in
     // separate threads.
     void start() {
+        debug("Transmitter: transmitter.start() : beggining");
         sender = new Sender(this);
-        std::cerr << "ELO ELOE 320" << std::endl;
         std::thread senderServiceThread([this]() { sender->start(); });
         senderServiceThread.detach();
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+//        std::this_thread::sleep_for(std::chrono::seconds(2));
 
+        debug("Transmitter: transmitter.start() : after starting sender, before "
+              "requestGatherer");
 
         requestGatherer = new RequestGatherer(this);
         std::thread gathererServiceThread([this]() { requestGatherer->start(); });
         gathererServiceThread.detach();
 
+        debug("Transmitter: transmitter.start() : after starting gatherer, before "
+              "retransmissionSender");
+
         retransmissionSender = new RetransmissionSender(this);
         retransmissionSender->start();
+
+        debug("Transmitter: transmitter.start() : after starting "
+              "retransmissionSender (in this thread)");
+
     }
 
 };

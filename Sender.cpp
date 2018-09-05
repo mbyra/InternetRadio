@@ -15,12 +15,14 @@
 #include <cinttypes>
 #include <byteswap.h>
 #include <cstring>
-
+#include "err.h"
 
 
 
 void Sender::start() {
+    debug("Sender : start() : beginning");
     initializeDataSocket();
+    debug("Sender : start() : after socket initialization");
 
     char buf[PSIZE];
     int bufEndIndex = 0;
@@ -32,11 +34,13 @@ void Sender::start() {
         readSize = read(STDIN, buf + bufEndIndex, sizeof(buf)-bufEndIndex);
         if (readSize <= 0) {
             // Error while reading (<) or end of input (=). Either way, break.
+            debug("Sender : start() : error while reading from STDIN");
             break;
         }
         bufEndIndex += readSize;
 
         if (bufEndIndex == sizeof(buf)) {
+//            debug("Sender : start() : buffer is full");
             // buffer is full, sending package:
             bufEndIndex = 0;
             readSize = 0;
@@ -60,6 +64,7 @@ void Sender::start() {
                                 != (long long) 2*sizeof(uint64_t) + PSIZE) {
                 // Try to live with this fact and work on.
                 std::cerr << "Error in write, continuing." << std::endl;
+                debug("Sender : start() : error writing to dataSock");
             }
 
 
@@ -72,6 +77,9 @@ void Sender::start() {
             // Prepare firstByte for next package:
             nextFirstByte += PSIZE;
             mut.unlock();
+        } else {
+            debug("Sender : start() : buffer is not full");
+
         }
     }
 }

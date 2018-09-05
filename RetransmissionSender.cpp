@@ -8,9 +8,11 @@
 #include "Transmitter.h"
 #include "parameters.h"
 #include <zconf.h>
+#include "err.h"
 
 void RetransmissionSender::start() {
 
+    debug("RetransmissionSender : start() : beginning");
     while(true) {
         transmitter->mut.lock();
 
@@ -22,7 +24,10 @@ void RetransmissionSender::start() {
             auto iter = transmitter->sender->data.find(firstByte);
             // TODO it's a map, can I just data[firstByte] instead?
             if (iter != transmitter->sender->data.end()) {
-                std::cerr << "sending retransmission" << std::endl;
+                debug("RetransmissionSender : start() : sending "
+                      "retransmission");
+
+//                std::cerr << "sending retransmission" << std::endl;
 
                 // Create a string to send: (field audio_data of Audio Package)
                 char bufWithVars[2*sizeof(uint64_t) + PSIZE];
@@ -43,7 +48,9 @@ void RetransmissionSender::start() {
                 if (write(transmitter->sender->dataSock, bufWithVars, 2*sizeof(uint64_t) + PSIZE)
                     != (long long) 2*sizeof(uint64_t) + PSIZE) {
                     // Try to live with this fact and work on.
-                    std::cerr << "Error in write, continuing." << std::endl;
+//                    std::cerr << "Error in write, continuing." << std::endl;
+                    debug("RetransmissionSender : start() : error while "
+                          "writing retransmission to dataSock");
                 }
 
             }

@@ -16,26 +16,26 @@ void MenuAgent::start() {
     initializeMenuSocket();
 
 //    FOR TESTING:
-    sockaddr_in server;
-    server.sin_family = AF_INET;
-    server.sin_addr.s_addr = htonl(INADDR_ANY);
-    server.sin_port = htons(UI_PORT);
-    Station s("Stacja nr 1", "249.000.000.001", server, 17000);
-    receiver->stationList.push_back(s);
-
-    sockaddr_in server2;
-    server2.sin_family = AF_INET;
-    server2.sin_addr.s_addr = htonl(INADDR_ANY);
-    server2.sin_port = htons(UI_PORT);
-    Station s2("Stacja nr 2", "249.000.000.001", server2, 17000);
-    receiver->stationList.push_back(s2);
-
-    sockaddr_in server3;
-    server3.sin_family = AF_INET;
-    server3.sin_addr.s_addr = htonl(INADDR_ANY);
-    server3.sin_port = htons(UI_PORT);
-    Station s3("Stacja nr 3", "249.000.000.001", server3, 17000);
-    receiver->stationList.push_back(s3);
+//    sockaddr_in server;
+//    server.sin_family = AF_INET;
+//    server.sin_addr.s_addr = htonl(INADDR_ANY);
+//    server.sin_port = htons(UI_PORT);
+//    Station s("Stacja nr 1", "249.000.000.001", server, 17000);
+//    receiver->stationList.push_back(s);
+//
+//    sockaddr_in server2;
+//    server2.sin_family = AF_INET;
+//    server2.sin_addr.s_addr = htonl(INADDR_ANY);
+//    server2.sin_port = htons(UI_PORT);
+//    Station s2("Stacja nr 2", "249.000.000.001", server2, 17000);
+//    receiver->stationList.push_back(s2);
+//
+//    sockaddr_in server3;
+//    server3.sin_family = AF_INET;
+//    server3.sin_addr.s_addr = htonl(INADDR_ANY);
+//    server3.sin_port = htons(UI_PORT);
+//    Station s3("Stacja nr 3", "249.000.000.001", server3, 17000);
+//    receiver->stationList.push_back(s3);
 
     /* Zapraszamy klientów */
     if (listen(client[0].fd, 5) == -1) {

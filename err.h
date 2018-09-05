@@ -8,4 +8,6 @@ extern void syserr(const char *fmt, ...);
 /* wypisuje informacje o bledzie i konczy dzialanie */
 extern void fatal(const char *fmt, ...);
 
+// Wypisuje informacje o błędzie, ale nie kończy działania
+extern void debug(const char *fmt, ...);
 #endif
