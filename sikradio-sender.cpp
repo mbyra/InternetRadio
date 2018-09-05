@@ -13,6 +13,7 @@
 #include <iostream>
 #include "parameters.h"
 #include "err.h"
+#include "Transmitter.h"
 
 // Prints diagnostic data to stdout.
 void diagnose() {
@@ -123,6 +124,9 @@ void parse(int argc, char **argv) {
 
 int main(int argc, char **argv) {
     parse(argc, argv);
+
+    Transmitter transmitter;
+    transmitter.start();
 
     return 0;
 }

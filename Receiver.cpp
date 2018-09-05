@@ -38,7 +38,6 @@ void Receiver::initializeServices() {
     menu = new MenuAgent(this);
     requester = new RetransmissionRequester(this);
     finder = new StationFinder(this);
-
 }
 
 Receiver::~Receiver() {
