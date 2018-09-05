@@ -62,17 +62,17 @@ unsigned parse_unsigned_16_bit(const char* s) {
 void parse(int argc, char **argv) {
     int c;
 
-    if (argc < 2) {
-        printf("Usage %s [optional arguments]\n"
-               "List of all possible flags [default value]):\n"
-               "\t-d discover address [255.255.255.255]\n"
-               "\t-C control port [37056]\n"
-               "\t-U user interface port [17056]\n"
-               "\t-b buffer size in bytes [65536]\n"
-               "\t-R retransmission time in ms [250]\n"
-               "\t-n default transmitter (station) name [random]\n"
-                , argv[0]);
-    }
+//    if (argc < 2) {
+//        printf("Usage %s [optional arguments]\n"
+//               "List of all possible flags [default value]):\n"
+//               "\t-d discover address [255.255.255.255]\n"
+//               "\t-C control port [37056]\n"
+//               "\t-U user interface port [17056]\n"
+//               "\t-b buffer size in bytes [65536]\n"
+//               "\t-R retransmission time in ms [250]\n"
+//               "\t-n default transmitter (station) name [random]\n"
+//                , argv[0]);
+//    }
 
     while((c = getopt(argc, argv, "d:C:U:b:R:n:")) != -1) {
         switch (c) {
@@ -101,7 +101,7 @@ void parse(int argc, char **argv) {
                 RTIME = parse_unsigned(optarg);
                 break;
             case 'n':
-                // Name of transmitter.
+                // Name of preferred station.
                 if (strlen(optarg) > MAX_STATION_NAME) {
                     char message [50];
                     sprintf(message, "Max station length is %d.\n",

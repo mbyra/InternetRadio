@@ -282,6 +282,7 @@ void MenuAgent::changeCurrentStation(State cmd) {
             }
         }
     }
+    receiver->state = STATION_CHANGED;
 
     receiver->mut.unlock();
 
