@@ -10,6 +10,7 @@
 #include <mutex>
 #include <chrono>
 #include <thread>
+#include <iostream>
 #include "Sender.h"
 #include "RequestGatherer.h"
 #include "RetransmissionSender.h"
@@ -61,8 +62,11 @@ public:
     // separate threads.
     void start() {
         sender = new Sender(this);
+        std::cerr << "ELO ELOE 320" << std::endl;
         std::thread senderServiceThread([this]() { sender->start(); });
         senderServiceThread.detach();
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+
 
         requestGatherer = new RequestGatherer(this);
         std::thread gathererServiceThread([this]() { requestGatherer->start(); });

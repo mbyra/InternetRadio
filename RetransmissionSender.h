@@ -6,6 +6,8 @@
 #define INTERNETRADIOSIK_RETRANSMISSIONSENDER_H
 
 
+#include "Sender.h"
+
 class Transmitter;
 
 class RetransmissionSender {
@@ -19,7 +21,6 @@ private:
 
     void start();
 };
-
 
 
 
