@@ -56,7 +56,7 @@ void RetransmissionRequester::start() {
 
                 auto packagesListStr = createRequestPackagesMessage(reducedList);
                 // TODO check if I need mutex because it can be the only place used
-                receiver->downloader->transmitterParamsMutex.lock();
+                receiver->downloader->downloaderVarsMutex.lock();
                 auto snd_len = sendto(receiver->downloader->currSock,
                         packagesListStr.c_str(),
                         packagesListStr.length(), 0,
@@ -68,7 +68,7 @@ void RetransmissionRequester::start() {
                     // despite of communication problems, so I ignore send
                     // error. TODO check it
                 }
-                receiver->downloader->transmitterParamsMutex.unlock();
+                receiver->downloader->downloaderVarsMutex.unlock();
 
             }
 

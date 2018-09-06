@@ -25,7 +25,7 @@ void DataDownloader::restartDownloader() {
     // If something from above occurs, reinitialize socket.
     if(socketIsNotSet || changedMcastAddress || changedTransmitterPort) {
 
-        transmitterParamsMutex.lock();
+        downloaderVarsMutex.lock();
         assert(receiver->stationIsSet);
         currMcastAddress = receiver->currentStation->mcastAddress;
         currTransmitterPort = receiver->currentStation->transmitterPort;
@@ -71,7 +71,7 @@ void DataDownloader::restartDownloader() {
         setsockopt(currSock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout,
                    sizeof(struct timeval));
 
-        transmitterParamsMutex.unlock();
+        downloaderVarsMutex.unlock();
     }
 
     receiver->requester->mut.lock();
@@ -147,7 +147,7 @@ void DataDownloader::start() {
         // If station was changed or is not set at all, take some actions:
         receiver->controlMutex.lock();
         if(receiver->state != STANDARD) {
-            isPlaybackValid = false;
+            isPlayingNow = false;
             playbackID++;
             if(receiver->state == STATION_NOT_SET) {
                 // close socket, clean up, return
@@ -160,11 +160,10 @@ void DataDownloader::start() {
                 return;
             } else if (receiver->stationIsSet == STATION_CHANGED) {
                 // continue working, but prepare to start playing new station
-                debug("DataDownlaoder : start() : detected station change, will restart downloader");
                 restartDownloader();
                 receiver->state = STANDARD;
-                debug("DataDownlaoder : start() : detected station change, "
-                      "restarted downloader");
+//                debug("DataDownlaoder : start() : detected station change, "
+//                      "restarted downloader");
             }
         }
         receiver->controlMutex.unlock();
@@ -209,11 +208,10 @@ void DataDownloader::start() {
                 bufferMutex.unlock();
             }
             else if (ap.session_id > currSesionId) {
-//                debug("DataDownloader: start() : ap.session_id > currSessionID : beginning");
                 // Specification says: start playing this from the beginning.
-                isPlaybackValid = false;
+                isPlayingNow = false;
                 playbackID++;
-                bufferMutex.unlock(); //TODO moze tu
+                bufferMutex.unlock();
                 receiver->controlMutex.lock();
                 restartDownloader();
                 receiver->controlMutex.unlock();
@@ -232,12 +230,12 @@ void DataDownloader::start() {
                         rcv_len-sizeof(ap.first_byte_num)-sizeof(ap.session_id));
 
                 // Specification says: start playing if buffer is filled in 75%
-                // (only if !isPlaybackValid, because otherwise music would
+                // (only if !isPlayingNow, because otherwise music would
                 // be playing now)
-                if (!isPlaybackValid
+                if (!isPlayingNow
                         and ap.first_byte_num >= currByteZero + 3*BSIZE/4) {
 
-                    isPlaybackValid = true;
+                    isPlayingNow = true;
                     std::thread t([this]() {play(currByteZero, playbackID); });
                     t.detach();
 
@@ -259,7 +257,7 @@ void DataDownloader::play(uint64_t firstByte, uint64_t pbID) {
             firstByte += iter->second.audio_data.size();
         }
         else {
-            isPlaybackValid = false;
+            isPlayingNow = false;
             playbackID++;
             receiver->controlMutex.lock();
             restartDownloader();

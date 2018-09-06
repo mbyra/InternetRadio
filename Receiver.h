@@ -80,6 +80,4 @@ private:
 
 };
 
-
-
 #endif //INTERNETRADIOSIK_RECEIVER_H

@@ -22,6 +22,11 @@ class DataDownloader {
 private:
     Receiver *receiver;
 
+    // Buffer implemented as map to have easy access to Packages by their
+    // firstByteNum and to be sorted by firstByte (default map order)
+    std::map<uint64_t, AudioPackage> buffer;
+    std::mutex bufferMutex;
+
     // Variables below tell the downloader from where to download packets.
     // They are usually the same as in the receiver's current station. However,
     // when e.g. current station is changed or not set, these variables here
@@ -34,14 +39,8 @@ private:
     uint64_t currSesionId = 0; // The same during transmission from receiver
     bool initializedTransmission = false;
     uint64_t playbackID = 0; // incremented every time something goes wrong
-    bool isPlaybackValid = false; // Flag checked before continuing to play
-    std::mutex transmitterParamsMutex;
-
-    // Buffer implemented as map to have easy access to Packages by their
-    // firstByteNum and to be sorted by firstByte (default map order)
-    std::map<uint64_t, AudioPackage> buffer;
-    std::mutex bufferMutex;
-
+    bool isPlayingNow = false; // Flag checked before continuing to play
+    std::mutex downloaderVarsMutex;
 
     explicit DataDownloader(Receiver *receiver) : receiver(receiver) {};
 
