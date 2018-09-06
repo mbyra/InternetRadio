@@ -161,8 +161,11 @@ void DataDownloader::start() {
                 return;
             } else if (receiver->stationIsSet == STATION_CHANGED) {
                 // continue working, but prepare to start playing new station
+                debug("DataDownlaoder : start() : detected station change, will restart downloader");
                 restartDownloader();
                 receiver->state = STANDARD;
+                debug("DataDownlaoder : start() : detected station change, "
+                      "restarted downloader");
             }
         }
         receiver->controlMutex.unlock();

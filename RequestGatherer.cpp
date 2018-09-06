@@ -78,6 +78,12 @@ void RequestGatherer::initializeSocket() {
     if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (void*)&ip_mreq, sizeof ip_mreq) < 0)
         syserr("setsockopt");
 
+    // https://stackoverflow.com/questions/24194961/how-do-i-use-setsockoptso-reuseaddr
+    int enable = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+        syserr("setsockopt(SO_REUSEADDR) failed");
+
+
     /* podpięcie się pod lokalny adres i port */
     struct sockaddr_in local_address;
     local_address.sin_family = AF_INET;

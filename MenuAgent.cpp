@@ -16,6 +16,7 @@ void MenuAgent::start() {
     initializeMenuSocket();
 
 //    FOR TESTING:
+//
 //    sockaddr_in server;
 //    server.sin_family = AF_INET;
 //    server.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -94,15 +95,22 @@ void MenuAgent::start() {
                         activeClients -= 1;
                     }
                     else {
+                        debug("MenuAgent : start() : will execute client's "
+                              "command");
                         executeClientCommand(i, buf[0]);
-
+                        debug("MenuAgent : start() : executed client's "
+                              "command");
                         if(clientState[i] == UP) {
+                            debug("MenuAgent : start() : will change UP");
                             changeCurrentStation(UP);
                             refreshClientsMenu();
+                            debug("MenuAgent : start() : changed UP");
                             clientState[i] = START;
                         } else if (clientState[i] == DOWN) {
+                            debug("MenuAgent : start() : will change DOWN");
                             changeCurrentStation(DOWN);
                             refreshClientsMenu();
+                            debug("MenuAgent : start() : changed DOWN");
                             clientState[i] = START;
                         }
                     }
@@ -259,10 +267,15 @@ void MenuAgent::changeCurrentStation(State cmd) {
     receiver->controlMutex.lock();
     receiver->stationListMutex.lock();
 
+    debug("MenuAgent : changecurrentStation : locked mutexes");
+
     // If current station is not selected try to set first station from list
     // as current.
-    if(not receiver->stationIsSet)
+    if(not receiver->stationIsSet) {
+        debug("MenuAgent : changecurrentStation : station was not set, "
+              "setting");
         setFirstStationAsCurrent();
+    }
 
     // It is possible to change the station only if stationList is longer than 1
     if (receiver->stationList.size() > 1) {
@@ -270,6 +283,10 @@ void MenuAgent::changeCurrentStation(State cmd) {
         for (auto iter = receiver->stationList.begin();
                                 iter != receiver->stationList.end(); iter++) {
             if (iter == receiver->currentStation) {
+                debug("MenuAgent : changecurrentStation : found current "
+                      "station, it is %s",
+                      receiver->currentStation->stationName.c_str());
+
                 switch (cmd) {
                     case UP:
                         if (iter->stationName != receiver->stationList.begin()->stationName)
@@ -282,6 +299,9 @@ void MenuAgent::changeCurrentStation(State cmd) {
                     default:
                         assert(true);
                 }
+                debug("MenuAgent : changecurrentStation : changed current "
+                      "station, now it is %s",
+                      receiver->currentStation->stationName.c_str());
                 receiver->state = STATION_CHANGED;
                 break;
 
@@ -290,7 +310,8 @@ void MenuAgent::changeCurrentStation(State cmd) {
     }
 
     receiver->controlMutex.unlock();
-    receiver->stationListMutex.lock();
+    receiver->stationListMutex.unlock();
+    debug("MenuAgent : changecurrentStation : unlocked mutexes");
 
 }
 

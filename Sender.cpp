@@ -35,12 +35,12 @@ void Sender::start() {
         if (readSize <= 0) {
             // Error while reading (<) or end of input (=). Either way, break.
             debug("Sender : start() : error while reading from STDIN");
+            exit(0); // TODO sprawdzić czy na pewno tak
             break;
         }
         bufEndIndex += readSize;
 
         if (bufEndIndex == sizeof(buf)) {
-//            debug("Sender : start() : buffer is full");
             // buffer is full, sending package:
             bufEndIndex = 0;
             readSize = 0;

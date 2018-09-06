@@ -40,6 +40,11 @@ void StationFinder::initCtrlSocket() {
                    sizeof optval) < 0)
         syserr("setsockopt multicast ttl");
 
+    // https://stackoverflow.com/questions/24194961/how-do-i-use-setsockoptso-reuseaddr
+    int enable = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+        syserr("setsockopt(SO_REUSEADDR) failed");
+
 //    /* zablokowanie rozsyłania grupowego do siebie */
 //    optval = 0;
 //    if (setsockopt(sock, SOL_IP, IP_MULTICAST_LOOP, (void*)&optval,
@@ -141,12 +146,18 @@ void StationFinder::replyParserService() {
             while(ss >> s)
                 name += " " + s;
 
+//            debug("StationFinder : replyParserService() : got new reply, it "
+//                  "is address: %s, port: %d, name: %s", address.c_str(),
+//                  port, name.c_str());
+
             // Now 'name' contains name of existing or new station.
             receiver->stationListMutex.lock();
             auto iter = receiver->stationList.begin();
             for (;iter != receiver->stationList.end(); iter++) {
                 if (iter->stationName == name) {
                     // We have this station so lets just update lastContactTime
+//                    debug("StationFinder : replyParserService() : we know "
+//                          "station %s, just updating contactTime", name.c_str());
                     iter->lastContactTime = std::chrono::system_clock::now();
                     break;
                 }
@@ -157,8 +168,12 @@ void StationFinder::replyParserService() {
                 currentTransmitter.sin_port = htons(CTRL_PORT);
                 Station station(name, address, currentTransmitter, port);
                 receiver->stationList.push_back(station);
+//                debug("StationFinder : replyParserService() : %s is a new "
+//                      "station. It was added to the list", name.c_str());
             }
 
+
+            // TODO POSORTOWAC STACJE ALFABETYCZNIE.
 
             // If this is a preferred station or there is nothing playing
             // now, there is a chance that we should start playing now.
@@ -168,8 +183,8 @@ void StationFinder::replyParserService() {
                 auto iter = receiver->stationList.begin();
                 for(; iter != receiver->stationList.end(); iter++) {
                     if(iter->stationName == name) {
-                        receiver->currentStation = iter;
-                        receiver->stationIsSet = true;
+//                        receiver->currentStation = iter;
+//                        receiver->stationIsSet = true;
                         break;
                     }
                 }
@@ -180,6 +195,11 @@ void StationFinder::replyParserService() {
 
                 if (receiver->state == STATION_NOT_SET) {
                     // If nothing is playing now, start playing.
+//                    debug("StationFinder : replyParserService() : nothing "
+//                          "was playing, so we start playing this new station,"
+//                          " %s", name.c_str());
+                    receiver->currentStation = iter;
+                    receiver->stationIsSet = true;
                     receiver->state = STANDARD;
                     std::thread t([this]() {receiver->startDownloadingData();});
                     t.detach();
@@ -189,6 +209,10 @@ void StationFinder::replyParserService() {
                     // If something is playing now, but it is not a PREFERRED
                     // STATION, and we have found PREFERRED STATION, then we
                     // start playing this new station.
+//                    debug("StationFinder : replyParserService() : something "
+//                          "was playing, but this was not preferred station "
+//                          "and we found preferred station %s, so we change "
+//                          "station to %s", name.c_str(), name.c_str());
                     receiver->state = STATION_CHANGED;
                     std::thread t([this]() {receiver->startDownloadingData();});
                     t.detach();
@@ -198,12 +222,15 @@ void StationFinder::replyParserService() {
                 receiver->controlMutex.unlock();
 
             } else {
+
                 receiver->stationListMutex.unlock();
             }
 
             receiver->menu->clientMutex.lock();
             receiver->menu->refreshClientsMenu(); // TODO maybe it should be done periodically
             receiver->menu->clientMutex.unlock();
+//            debug("StationFinder : replyParserService, refreshed clients menu"
+//                  " and leaving");
         }
     }
 
