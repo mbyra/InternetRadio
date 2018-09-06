@@ -92,18 +92,19 @@ RetransmissionRequester::createRequestPackagesMessage(std::list<uint64_t>
 std::list<uint64_t>
 RetransmissionRequester::removeUnnecessaryPackages(std::list<uint64_t> list) {
     std::list<uint64_t> listWithoutUnnecessaryPackets;
-    receiver->downloader->bufferMutex.lock();
     for (auto byteNum : list) {
+        receiver->downloader->bufferMutex.lock();
         if (byteNum < receiver->downloader->currByteZero
             or byteNum < receiver->downloader->buffer.begin()->first
             or receiver->downloader->buffer.find(byteNum) !=
                receiver->downloader->buffer.end()) {
             // Package is too old to be useful ever again or was
             // already saved in buffer.
+            receiver->downloader->bufferMutex.unlock();
             continue;
         }
         listWithoutUnnecessaryPackets.push_back(byteNum);
+        receiver->downloader->bufferMutex.unlock();
     }
-    receiver->downloader->bufferMutex.unlock();
     return listWithoutUnnecessaryPackets;
 }

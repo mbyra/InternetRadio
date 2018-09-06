@@ -198,7 +198,9 @@ void MenuAgent::telnetSendMenu(int sock) {
        "------------------------------------------------------------------------\r\n";
 
     // stations with indicator:
-    receiver->mut.lock();
+    debug("MenuAgent : telnetSendMenu : LOCKING receiver->mut");
+    receiver->controlMutex.lock();
+    receiver->stationListMutex.lock();
 
     // If there is no currently chosen station, choose the first one.
     if(not receiver->stationIsSet)
@@ -211,7 +213,9 @@ void MenuAgent::telnetSendMenu(int sock) {
         else
             ss << "    " << iter->stationName << "\r\n";
     }
-    receiver->mut.unlock();
+    receiver->controlMutex.unlock();
+    receiver->stationListMutex.unlock();
+    debug("MenuAgent : telnetSendMenu : UNLOCKED receiver->mut");
 
     // bottom:
     ss << "------------------------------------------------------------------------\r\n";
@@ -252,7 +256,8 @@ void MenuAgent::refreshClientsMenu() {
 }
 
 void MenuAgent::changeCurrentStation(State cmd) {
-    receiver->mut.lock();
+    receiver->controlMutex.lock();
+    receiver->stationListMutex.lock();
 
     // If current station is not selected try to set first station from list
     // as current.
@@ -277,14 +282,15 @@ void MenuAgent::changeCurrentStation(State cmd) {
                     default:
                         assert(true);
                 }
+                receiver->state = STATION_CHANGED;
                 break;
 
             }
         }
     }
-    receiver->state = STATION_CHANGED;
 
-    receiver->mut.unlock();
+    receiver->controlMutex.unlock();
+    receiver->stationListMutex.lock();
 
 }
 

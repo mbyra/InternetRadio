@@ -56,10 +56,8 @@ void StationFinder::initCtrlSocket() {
 
 void StationFinder::searchStationService() {
 
-    debug("StationFinder : searchStationService() : beginning");
     const char* buf = LOOKUP_MESSAGE.c_str();
     while (true) {
-        debug("StationFinder : searchStationService() : starting lookup send");
 
         // Laboratory 05: echo-client.c
         auto snd_len = sendto(sock, buf, strlen(buf), 0, (struct sockaddr *)
@@ -68,7 +66,8 @@ void StationFinder::searchStationService() {
             syserr("partial / failed write");
         }
 
-        receiver->mut.lock();
+        receiver->controlMutex.lock();
+        receiver->stationListMutex.lock();
 
         auto iter = receiver->stationList.begin();
         while (iter != receiver->stationList.end()) {
@@ -76,28 +75,30 @@ void StationFinder::searchStationService() {
             if (std::chrono::duration_cast<std::chrono::seconds>
                     (iter->lastContactTime - std::chrono::system_clock::now())
                     >= std::chrono::seconds(STATION_DELETION_TIME)) {
-                debug("StationFinder : searchStationService() : will remove station");
 
-
+                bool removedWasCurrent = receiver->currentStation == iter;
+                auto next = iter++;
+                receiver->stationList.erase(iter);
                 // If removed station is current, unset currentStation
-                if(receiver->currentStation == iter) {
-//                    receiver->currentStation;
-                    debug("StationFinder : searchStationService() : removed station was current");
-                    receiver->stationIsSet = false;
+                if(removedWasCurrent) {
+                    if (receiver->stationList.empty()) {
+                        receiver->state = STATION_NOT_SET;
+                    }
+                    else {
+                        receiver->currentStation = receiver->stationList.begin();
+                        receiver->state = STATION_CHANGED;
+                    }
                 }
 
-
-                auto next = iter++;
-                assert(next != iter); // I dont remember if the ++ place matters
-                receiver->stationList.erase(iter);
-                debug("StationFinder : searchStationService() : station removed");
+                iter = next;
             }
             else {
                 iter++;
             }
         }
 
-        receiver->mut.unlock();
+        receiver->controlMutex.unlock();
+        receiver->stationListMutex.unlock();
 
         std::this_thread::sleep_for(std::chrono::seconds(LOOKUP_INTERVAL));
     }
@@ -105,7 +106,6 @@ void StationFinder::searchStationService() {
 }
 
 void StationFinder::replyParserService() {
-    debug("StationFinder : replyParserService() : beginning");
 
     while(true) {
         char buf[500];
@@ -115,33 +115,18 @@ void StationFinder::replyParserService() {
         // Receive message from first transmitter trying to contact:
         ssize_t length;
         if ((length = recvfrom(sock, buf, 500, 0, (struct sockaddr *)
-                &currentTransmitter,
-                     &rcva_len)) < 0)
+                &currentTransmitter, &rcva_len)) < 0)
             syserr("Error while recvfrom");
-        debug("StationFinder : replyParserService() : received reply");
 
 
         // Parse this message:
         std::istringstream ss(std::string(buf, length));
         std::string s;
         ss >> s;
-        debug("StationFinder : replyParserService() : reply message is %s", s.c_str());
-        if (s == REPLY_MESSAGE) {
-            debug("Message is same as REPLY_MESSAGE");
-        }
-        else {
-            debug("Message is different from REPLY_MESSAGE. message:_%s_ , "
-                  "REPLY_MESSAGE:_%s_", s.c_str(), REPLY_MESSAGE.c_str());
-        }
 
         if (s == REPLY_MESSAGE) {
-            debug("Entered loop");
             std::string address, port_str, name;
             ss >> address >> port_str >> name;
-            debug("StationFinder : replyParserService() : reply encoding, "
-                  "before casting port to int, "
-                  "address: %s, port %s, name %s", address.c_str(), port_str.c_str(),
-                  name.c_str());
             int port;
             try {
                 port = std::stoi(port_str);
@@ -151,25 +136,16 @@ void StationFinder::replyParserService() {
             }
 
 
-
-            debug("after try catch");
-
             // Task description states that name can contain spaces, so we
             // continue do add spaces to 'name' and next parts from ss.
             while(ss >> s)
                 name += " " + s;
 
-            debug("StationFinder : replyParserService() : reply encoded, "
-                  "address: %s, port %d, name %s", address.c_str(), port,
-                  name.c_str());
-
             // Now 'name' contains name of existing or new station.
-            receiver->mut.lock();
+            receiver->stationListMutex.lock();
             auto iter = receiver->stationList.begin();
             for (;iter != receiver->stationList.end(); iter++) {
                 if (iter->stationName == name) {
-                    debug("StationFinder : replyParserService() : we know "
-                          "this station %s", name.c_str());
                     // We have this station so lets just update lastContactTime
                     iter->lastContactTime = std::chrono::system_clock::now();
                     break;
@@ -181,17 +157,14 @@ void StationFinder::replyParserService() {
                 currentTransmitter.sin_port = htons(CTRL_PORT);
                 Station station(name, address, currentTransmitter, port);
                 receiver->stationList.push_back(station);
-                debug("StationFinder : replyParserService() : found new "
-                      "station, added to stationList");
             }
 
 
             // If this is a preferred station or there is nothing playing
             // now, there is a chance that we should start playing now.
             if(PREFERRED_STATION == name || not receiver->isPlayingNow) {
-                debug("StationFinder : replyParserService() : reply from "
-                      "preferred station, starting playing it");
 
+                receiver->controlMutex.lock();
                 auto iter = receiver->stationList.begin();
                 for(; iter != receiver->stationList.end(); iter++) {
                     if(iter->stationName == name) {
@@ -203,14 +176,11 @@ void StationFinder::replyParserService() {
                 // The station MUST be now on list and if clause entered
                 assert(iter != receiver->stationList.end());
 
-                if (!receiver->isPlayingNow) {
-                    // If othing is playing now, start playing.
-                    debug("StationFinder : replyParserService() : reply from "
-                          "preferred station and is not playing: starting "
-                          "startDownloadData in separate thread and marking "
-                          "state as STANDARD");
+                receiver->stationListMutex.unlock();
+
+                if (receiver->state == STATION_NOT_SET) {
+                    // If nothing is playing now, start playing.
                     receiver->state = STANDARD;
-                    receiver->mut.unlock();
                     std::thread t([this]() {receiver->startDownloadingData();});
                     t.detach();
 
@@ -219,17 +189,16 @@ void StationFinder::replyParserService() {
                     // If something is playing now, but it is not a PREFERRED
                     // STATION, and we have found PREFERRED STATION, then we
                     // start playing this new station.
-                    debug("StationFinder : replyParserService() : reply from "
-                          "preferred station, is playing but this is "
-                          "preferred: marking receiver state as "
-                          "STATION_CHANGED");
                     receiver->state = STATION_CHANGED;
-                    receiver->mut.unlock();
-//                    std::thread t([this]() {receiver->startDownloadingData();});
-//                    t.detach();
-
+                    std::thread t([this]() {receiver->startDownloadingData();});
+                    t.detach();
 
                 }
+
+                receiver->controlMutex.unlock();
+
+            } else {
+                receiver->stationListMutex.unlock();
             }
 
             receiver->menu->clientMutex.lock();

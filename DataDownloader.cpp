@@ -15,10 +15,6 @@
 
 void DataDownloader::restartDownloader() {
 
-    debug("DataDownloader : restartDownloader() : beginning");
-    receiver->mut.lock();
-    debug("DataDownloader : restartDownloader() : after locking receiver "
-          "mutex");
 
     bool socketIsNotSet = currSock == -1;
     bool changedMcastAddress = currMcastAddress !=
@@ -26,15 +22,11 @@ void DataDownloader::restartDownloader() {
     bool changedTransmitterPort = currTransmitterPort !=
             receiver->currentStation->transmitterPort;
 
-    debug("DataDownloader : restartDownloader() : socketIsNotSet: %d, "
-          "changedMcastAddress: %d, changedTransmitterPort: %d",
-          socketIsNotSet, changedMcastAddress, changedTransmitterPort);
 
     // If something from above occurs, reinitialize socket.
     if(socketIsNotSet || changedMcastAddress || changedTransmitterPort) {
-        debug("DataDownloader : restartDownloader() : starting reinitializing"
-              " socket");
 
+        transmitterParamsMutex.lock();
         assert(receiver->stationIsSet);
         currMcastAddress = receiver->currentStation->mcastAddress;
         currTransmitterPort = receiver->currentStation->transmitterPort;
@@ -42,17 +34,11 @@ void DataDownloader::restartDownloader() {
         struct sockaddr_in local_address;
         struct ip_mreq ip_mreq;
 
-        debug("DataDownloader : restartDownloader() : before locking transmitterParamsMutex");
-
-        transmitterParamsMutex.lock();
-        debug("DataDownloader : restartDownloader() : after locking "
-              "transmitterParamsMutex");
-
 
         // This method can be triggered many times, also with "living' socket.
         // In this case, it is necessary to close the socket.
         if (currSock != -1) {
-            debug("DataDownloader : restartDownloader() : closing currSock");
+//            debug("DataDownloader : restartDownloader() : closing currSock");
             close(currSock);
         }
 
@@ -88,28 +74,16 @@ void DataDownloader::restartDownloader() {
 
         transmitterParamsMutex.unlock();
     }
-    debug("DataDownloader : restartDownloader() : socket reinitialized");
-
 
     receiver->requester->mut.lock();
     receiver->requester->requests.clear(); // TODO should I do it?
     receiver->requester->mut.unlock();
-    debug("DataDownloader : restartDownloader() : retransmission requests "
-          "cleared");
 
     bufferMutex.lock();
     buffer.clear();
+    initializedTransmission = false;
     bufferMutex.unlock();
-
-    debug("DataDownloader : restartDownloader() : buffer cleared");
-
-    receiver->isPlayingNow = true;
-
-    receiver->mut.unlock();
-    debug("DataDownloader : restartDownloader() : closing");
-
 }
-
 
 
 void DataDownloader::addRetransmissionRequestOfMissingPackages(AudioPackage ap) {
@@ -127,20 +101,17 @@ void DataDownloader::addRetransmissionRequestOfMissingPackages(AudioPackage ap) 
         std::list<uint64_t> missingBytes;
         if(missingByte < ap.first_byte_num) {
             // There are some missing bytes indeed.
-            debug("DataDownloader: there are missing packages : will add to requests container");
 
             while(missingByte < ap.first_byte_num) {
                 missingBytes.push_back(missingByte);
                 missingByte += ap.audio_data.size();
             }
-
             receiver->requester->mut.lock();
             receiver->requester->requests.emplace_back(
                     std::chrono::system_clock::now() +
                     std::chrono::milliseconds(RTIME),
                     missingBytes);
             receiver->requester->mut.unlock();
-            debug("DataDownloader: there are missing packages : finished dealing with it");
         }
     }
 }
@@ -157,7 +128,6 @@ void DataDownloader::eraseOldPackagesFromBuffer(AudioPackage current,
         }
 
         if (buffer.begin() != iter) {
-            debug("DataDownloader: erasing too old packages from buffer");
             buffer.erase(buffer.begin(), iter);
         }
     }
@@ -165,54 +135,56 @@ void DataDownloader::eraseOldPackagesFromBuffer(AudioPackage current,
 
 
 void DataDownloader::start() {
-    debug("DataDownloader: start() : beginning");
+    receiver->controlMutex.lock();
     restartDownloader();
-    debug("DataDownloader: start() : after restartDownloader() at beginning");
+    receiver->controlMutex.unlock();
 
     // Buffer for reading packages
-    char buf[1'000'000];
+    int TMP_BUF_SIZE = 1000000;
+    char buf[TMP_BUF_SIZE];
 
     while (true) {
 
         // If station was changed or is not set at all, take some actions:
-        receiver->mut.lock();
+        receiver->controlMutex.lock();
         if(receiver->state != STANDARD) {
             isPlaybackValid = false;
             playbackID++;
             if(receiver->state == STATION_NOT_SET) {
                 // close socket, clean up, return
-                debug("DataDownloader: start() : station not set ");
                 assert(currSock != -1);
                 if (close(currSock) < 0)
                     perror("close");
                 currSock = -1;
                 receiver->isPlayingNow = false;
+
                 return;
             } else if (receiver->stationIsSet == STATION_CHANGED) {
-                debug("DataDownloader: start() : station changed : beginning");
                 // continue working, but prepare to start playing new station
-                receiver->mut.unlock(); // TODO ??
                 restartDownloader();
-                receiver->mut.lock();
                 receiver->state = STANDARD;
-                debug("DataDownloader: start() : station changed : restarted");
             }
         }
-
+        receiver->controlMutex.unlock();
 
         // Now state is STANDARD, so we can just continue standard routine,
         // that is: read from socket, parse package, and play or wait for
         // more packets if necessary.
 
-        auto rcv_len = read(currSock, buf, strlen(buf));
+
+        int rcv_len = read(currSock, buf, TMP_BUF_SIZE);
+
         // According to specification, we should keep the receiver running as
         // long as possible, so we ignore failure in read, because it can be
         // requested for retransmission further.
         // Moreover valid audio package should contain at least session_id
         // and first_byte_num
         AudioPackage ap;
-        if (rcv_len >= sizeof(ap.session_id) + sizeof(ap.first_byte_num)) {
-            debug("DataDownloader: start() : received valid AudioPackage");
+        // rcv_len >= sizeof(ap.session_id) + sizeof(ap.first_byte_num)
+        int two = 2 * sizeof(uint64_t);
+
+
+        if (rcv_len >= two) {
 
             std::string rec{buf, (unsigned long) rcv_len};
 
@@ -224,7 +196,6 @@ void DataDownloader::start() {
 
             // Check if this is first package received from this transmitter.
             if (!initializedTransmission) {
-                debug("DataDownloader: start() : AudioPackage is first package");
                 currSesionId = ap.session_id;
                 currByteZero = ap.first_byte_num;
                 initializedTransmission = true;
@@ -232,18 +203,18 @@ void DataDownloader::start() {
 
             // Since now we don't care if this is first or not first package
             if(ap.session_id < currSesionId) {
-                debug("DataDownloader: start() : ap.session_id < currSessionID");
                 // Specification says: ignore this
                 bufferMutex.unlock();
             }
             else if (ap.session_id > currSesionId) {
-                debug("DataDownloader: start() : ap.session_id > currSessionID : beginning");
+//                debug("DataDownloader: start() : ap.session_id > currSessionID : beginning");
                 // Specification says: start playing this from the beginning.
                 isPlaybackValid = false;
                 playbackID++;
-                bufferMutex.unlock();
+                bufferMutex.unlock(); //TODO moze tu
+                receiver->controlMutex.lock();
                 restartDownloader();
-                debug("DataDownloader: start() : ap.session_id > currSessionID : restartedDownloader");
+                receiver->controlMutex.unlock();
             }
             else { // ap.session_id == currSessionId  ,i.e. standard case
                 // Add new package to buffer
@@ -263,13 +234,12 @@ void DataDownloader::start() {
                 // be playing now)
                 if (!isPlaybackValid
                         and ap.first_byte_num >= currByteZero + 3*BSIZE/4) {
-                    debug("DataDownloader: start() : was not valid and buffer"
-                          " is now 3/4 full: starting playing service");
-                    std::thread t([this]() {play(currByteZero, playbackID); });
-                    debug("DataDownloader: start() : was not valid and buffer"
-                          " is now 3/4 full: playing service stopped");
-                }
 
+                    isPlaybackValid = true;
+                    std::thread t([this]() {play(currByteZero, playbackID); });
+                    t.detach();
+
+                }
                 bufferMutex.unlock();
             }
 
@@ -278,7 +248,8 @@ void DataDownloader::start() {
 }
 
 void DataDownloader::play(uint64_t firstByte, uint64_t pbID) {
-    while(isPlaybackValid) {
+
+    while(playbackID == pbID) {
         auto iter = buffer.find(firstByte);
         if(iter != buffer.end()) {
             // Playing at least
@@ -288,8 +259,9 @@ void DataDownloader::play(uint64_t firstByte, uint64_t pbID) {
         else {
             isPlaybackValid = false;
             playbackID++;
-            bufferMutex.unlock(); // TODO czy aby na pewno
+            receiver->controlMutex.lock();
             restartDownloader();
+            receiver->controlMutex.unlock();
         }
     }
 }

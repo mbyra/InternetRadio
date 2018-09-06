@@ -48,14 +48,13 @@ private:
 
     // Vector in which objects representing stations (transmitters) are stored:
     std::list<Station> stationList;
+    std::mutex stationListMutex;
 
     // Pointer to current
-    std::list<Station, std::allocator<Station>>::iterator currentStation; // TODO assuming name uniquely defines
+    std::list<Station, std::allocator<Station>>::iterator currentStation;
     bool stationIsSet = false;
     bool isPlayingNow = false; // toggle play on/off
-    std::mutex mut; // guards stationList, currentStation, isPlayingNow //
-    // TODO should I make two mutexes?
-
+    std::mutex controlMutex; // guards stationList, currentStation, isPlayingNow //
 
     ReceiverState state = STATION_NOT_SET;
 
