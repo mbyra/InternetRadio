@@ -8,9 +8,9 @@
 
 
 void Receiver::start() {
-    debug("Receiver : start() : beginning");
+//    debug("Receiver : start() : beginning");
     initializeServices();
-    debug("Receiver : start() : after socket initialization");
+//    debug("Receiver : start() : after socket initialization");
 
     // Runs all services in separate threads:
 //    std::thread menuAgentThread = std::thread([this]() {menu->start(); });
@@ -20,7 +20,7 @@ void Receiver::start() {
     std::thread retransmissionRequesterThread = std::thread([this]()
             {requester->start(); });
     retransmissionRequesterThread.detach();
-    debug("Receiver : start() : retransmissionRequester detached");
+//    debug("Receiver : start() : retransmissionRequester detached");
 
 //    std::thread dataDownloaderThread = std::thread([this]()
 //            {downloader.start(); });
@@ -28,20 +28,20 @@ void Receiver::start() {
 
     std::thread stationFinderThread = std::thread([this]() {finder->start(); });
     stationFinderThread.detach();
-    debug("Receiver : start() : stationFinder detached");
+//    debug("Receiver : start() : stationFinder detached");
 
     // StationFinder is run in this thread:
-    debug("Receiver : start() : starting menu in this thread");
+//    debug("Receiver : start() : starting menu in this thread");
     menu->start();
-    debug("Receiver : start() : after exiting menu service");
+//    debug("Receiver : start() : after exiting menu service");
 }
 
 void Receiver::startDownloadingData() {
-    debug("Receiver : start() : starting dataDownlaoder");
+//    debug("Receiver : start() : starting dataDownlaoder");
     std::thread dataDownloaderThread = std::thread([this]()
             {downloader->start(); });
     dataDownloaderThread.detach();
-    debug("Receiver : start() : dataDownloader detached");
+//    debug("Receiver : start() : dataDownloader detached");
 
 }
 

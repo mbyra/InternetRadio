@@ -29,7 +29,7 @@ private:
     // triggers resetAll() function.
     std::string currMcastAddress = "";
     int currSock = -1; // -1 means unset
-    int currTransmitterPort = -1;
+    int currTransmitterPort = -1; // -1 means unset
     std::mutex transmitterParamsMutex;
 
     // Buffer implemented as map to have easy access to Packages by their
@@ -52,7 +52,6 @@ private:
     // isPlayingNow in Receiver to true. If socket changed, it is reinitialized,
     // currTransmitterPort and currMcastAddress are set to match those in
     // receiver->currentStation.
-    // NO NEED TO HAVE ACQUIRE RECEIVER MUTEX - method does it internally
     void restartDownloader();
 
 
@@ -84,8 +83,9 @@ private:
     // Starts 'playing' to stdout until encounters first missing byte.
     void play(uint64_t firstByteToPlay, uint64_t pbID);
 
-public:
+    // Conversion (bytes in network order, uint64_t in host order)
     uint64_t bytesToUint64(std::string);
+public:
 
 };
 
