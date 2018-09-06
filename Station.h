@@ -28,7 +28,8 @@ public:
                            mcastAddress(mcastAddress),
                            transmitterAddress(transmitterAddress),
                            transmitterPort(transmitterPort),
-                           lastContactTime(std::chrono::system_clock::now()) {}
+                           lastContactTime(std::chrono::system_clock::now()) {};
+
 };
 
 

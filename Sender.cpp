@@ -22,9 +22,9 @@
 void Sender::start() {
 
 
-    debug("Sender : start() : beginning");
+//    debug("Sender : start() : beginning");
     initializeDataSocket();
-    debug("Sender : start() : after socket initialization");
+//    debug("Sender : start() : after socket initialization");
 
     char buf[PSIZE];
     int bufEndIndex = 0;
@@ -36,7 +36,7 @@ void Sender::start() {
         readSize = read(STDIN, buf + bufEndIndex, sizeof(buf)-bufEndIndex);
         if (readSize <= 0) {
             // Error while reading (<) or end of input (=). Either way, break.
-            debug("Sender : start() : error while reading from STDIN");
+//            debug("Sender : start() : error while reading from STDIN");
             exit(0); // TODO sprawdzić czy na pewno tak
             break;
         }
@@ -65,8 +65,8 @@ void Sender::start() {
             if (write(dataSock, bufWithVars, 2*sizeof(uint64_t) + PSIZE)
                                 != (long long) 2*sizeof(uint64_t) + PSIZE) {
                 // Try to live with this fact and work on.
-                std::cerr << "Error in write, continuing." << std::endl;
-                debug("Sender : start() : error writing to dataSock");
+//                std::cerr << "Error in write, continuing." << std::endl;
+//                debug("Sender : start() : error writing to dataSock");
             }
 
 
@@ -80,7 +80,7 @@ void Sender::start() {
             nextFirstByte += PSIZE;
             mut.unlock();
         } else {
-            debug("Sender : start() : buffer is not full");
+//            debug("Sender : start() : buffer is not full");
 
         }
     }
@@ -133,7 +133,7 @@ void Sender::initializeDataSocket() {
 
 void Sender::startRetransmissionSender() {
 
-    debug("RetransmissionSender : start() : beginning");
+//    debug("RetransmissionSender : start() : beginning");
     while(true) {
         transmitter->mut.lock();
 
@@ -145,8 +145,8 @@ void Sender::startRetransmissionSender() {
             auto iter = transmitter->sender->data.find(firstByte);
             // TODO it's a map, can I just data[firstByte] instead?
             if (iter != transmitter->sender->data.end()) {
-                debug("RetransmissionSender : start() : sending "
-                      "retransmission");
+//                debug("RetransmissionSender : start() : sending "
+//                      "retransmission");
 
 //                std::cerr << "sending retransmission" << std::endl;
 
@@ -170,8 +170,8 @@ void Sender::startRetransmissionSender() {
                     != (long long) 2*sizeof(uint64_t) + PSIZE) {
                     // Try to live with this fact and work on.
 //                    std::cerr << "Error in write, continuing." << std::endl;
-                    debug("RetransmissionSender : start() : error while "
-                          "writing retransmission to dataSock");
+//                    debug("RetransmissionSender : start() : error while "
+//                          "writing retransmission to dataSock");
                 }
 
             }

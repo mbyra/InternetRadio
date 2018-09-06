@@ -32,7 +32,7 @@ unsigned parse_unsigned(const char* s) {
     if(!std::regex_match(optarg, std::regex("[0-9]+")))
         fatal("Not a positive number in argument");
 
-    long number = strtol(optarg, nullptr, 10);
+    long number = strtol(s, nullptr, 10);
 
     return static_cast<unsigned int>(number);
 }

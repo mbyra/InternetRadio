@@ -22,7 +22,6 @@ void DataDownloader::restartDownloader() {
     bool changedTransmitterPort = currTransmitterPort !=
             receiver->currentStation->transmitterPort;
 
-
     // If something from above occurs, reinitialize socket.
     if(socketIsNotSet || changedMcastAddress || changedTransmitterPort) {
 

@@ -27,21 +27,21 @@ private:
     // when e.g. current station is changed or not set, these variables here
     // and in receiver are different. When DataDownloader detects it, it
     // triggers resetAll() function.
-    std::string currMcastAddress = "";
+    std::string currMcastAddress = ""; // empty means unset
     int currSock = -1; // -1 means unset
     int currTransmitterPort = -1; // -1 means unset
-    std::mutex transmitterParamsMutex;
-
-    // Buffer implemented as map to have easy access to Packages by their
-    // firstByteNum
-    std::map<uint64_t, AudioPackage> buffer;
     uint64_t currByteZero = 0;
     uint64_t currSesionId = 0; // The same during transmission from receiver
     bool initializedTransmission = false;
-    std::mutex bufferMutex;
-
     uint64_t playbackID = 0; // incremented every time something goes wrong
     bool isPlaybackValid = false; // Flag checked before continuing to play
+    std::mutex transmitterParamsMutex;
+
+    // Buffer implemented as map to have easy access to Packages by their
+    // firstByteNum and to be sorted by firstByte (default map order)
+    std::map<uint64_t, AudioPackage> buffer;
+    std::mutex bufferMutex;
+
 
     explicit DataDownloader(Receiver *receiver) : receiver(receiver) {};
 

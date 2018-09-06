@@ -3,6 +3,7 @@
 //
 
 #include "StationFinder.h"
+#include "Station.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <thread>
@@ -13,6 +14,7 @@
 #include <cstring>
 #include <cassert>
 #include <sstream>
+#include <algorithm>
 
 
 // Creates udp socket used for scanning for transmitters. Sets options and
@@ -173,7 +175,7 @@ void StationFinder::replyParserService() {
             }
 
 
-            // TODO POSORTOWAC STACJE ALFABETYCZNIE.
+            sortStationsAlphabetically();
 
             // If this is a preferred station or there is nothing playing
             // now, there is a chance that we should start playing now.
@@ -183,8 +185,6 @@ void StationFinder::replyParserService() {
                 auto iter = receiver->stationList.begin();
                 for(; iter != receiver->stationList.end(); iter++) {
                     if(iter->stationName == name) {
-//                        receiver->currentStation = iter;
-//                        receiver->stationIsSet = true;
                         break;
                     }
                 }
@@ -237,21 +237,22 @@ void StationFinder::replyParserService() {
 }
 
 void StationFinder::start() {
-//    debug("StationFinder : start() : beginning");
     initCtrlSocket();
-//    debug("StationFinder : start() : after initializing a socket");
 
     // run replyParser service in separate thread
     std::thread replyParserServiceThread([this]() {replyParserService(); });
     replyParserServiceThread.detach();
-//    debug("StationFinder : start() : replyParserService started in separate "
-//          "thread");
-
-//    debug("StationFinder : start() : starting searchStationService in this "
-//          "thread");
 
     // in current thread run searchStation service
     searchStationService();
-//    debug("StationFinder : start() : finished searchStationService");
 
+}
+
+// Assuming mutex for stationList is LOCKED outside.
+void StationFinder::sortStationsAlphabetically() {
+
+    receiver->stationList.sort([](const Station& st1, const Station& st2)
+                               {
+                                   return st1.stationName < st2.stationName;
+                               });
 }

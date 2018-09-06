@@ -52,9 +52,7 @@ private:
     // available stations in network. Removes unavailable stations from list.
     void replyParserService();
 
-    // Main function of class: initializes socket and runs
-    // searchStationService() and replyParser() in separate threads.
-
+    void sortStationsAlphabetically();
 
 };
 
