@@ -10,16 +10,14 @@
 #include <mutex>
 
 class Transmitter;
-class RetransmissionSender;
 
 // Class which main task is to read data from input and send it as UDP
 // datagrams. Data format is specified as structure of AudioPackage.
 class Sender {
     friend class Transmitter;
-    friend class RetransmissionSender;
 
 public:
-    Sender(Transmitter* transmitter) : transmitter(transmitter) {};
+    explicit Sender(Transmitter* transmitter) : transmitter(transmitter) {};
 
 private:
     Transmitter* transmitter;
@@ -35,6 +33,8 @@ private:
     void initializeDataSocket();
 
     void start();
+
+    void startRetransmissionSender();
 };
 
 

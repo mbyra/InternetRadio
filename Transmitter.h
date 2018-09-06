@@ -13,17 +13,14 @@
 #include <iostream>
 #include "Sender.h"
 #include "RequestGatherer.h"
-#include "RetransmissionSender.h"
 #include "err.h"
 
 class Sender;
 class RequestGatherer;
-class RetransmissionSender;
 
 class Transmitter {
     friend class Sender;
     friend class RequestGatherer;
-    friend class RetransmissionSender;
 
 private:
     // FIFO containing requests for retransmission (represented as firstByte)
@@ -40,10 +37,6 @@ private:
     // 2. Gathering retransmission requests in periods of RTIME ms
     RequestGatherer* requestGatherer;
 
-    // 3. Retransmitting requested missing audio packets.
-    RetransmissionSender* retransmissionSender;
-
-    // TODO 2 and 3 in one or separate class?
 
 public:
     Transmitter() {
@@ -56,33 +49,27 @@ public:
     ~Transmitter() {
         delete requestGatherer;
         delete sender;
-        delete retransmissionSender;
+//        delete retransmissionSender;
     }
 
     // Main function of the class. Starts all services in infinite loops in
     // separate threads.
     void start() {
-        debug("Transmitter: transmitter.start() : beggining");
         sender = new Sender(this);
+
         std::thread senderServiceThread([this]() { sender->start(); });
         senderServiceThread.detach();
-//        std::this_thread::sleep_for(std::chrono::seconds(2));
 
-        debug("Transmitter: transmitter.start() : after starting sender, before "
-              "requestGatherer");
+        std::thread retransmissionSenderThread
+                ([this]() { sender->startRetransmissionSender() ;});
+        retransmissionSenderThread.detach();
+
 
         requestGatherer = new RequestGatherer(this);
-        std::thread gathererServiceThread([this]() { requestGatherer->start(); });
-        gathererServiceThread.detach();
-
-        debug("Transmitter: transmitter.start() : after starting gatherer, before "
-              "retransmissionSender");
-
-        retransmissionSender = new RetransmissionSender(this);
-        retransmissionSender->start();
-
-        debug("Transmitter: transmitter.start() : after starting "
-              "retransmissionSender (in this thread)");
+        // Start requestGatherer in this thread:
+        requestGatherer->start();
+//        std::thread gathererServiceThread([this]() { requestGatherer->start(); });
+//        gathererServiceThread.detach();
 
     }
 

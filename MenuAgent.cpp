@@ -95,22 +95,14 @@ void MenuAgent::start() {
                         activeClients -= 1;
                     }
                     else {
-                        debug("MenuAgent : start() : will execute client's "
-                              "command");
                         executeClientCommand(i, buf[0]);
-                        debug("MenuAgent : start() : executed client's "
-                              "command");
                         if(clientState[i] == UP) {
-                            debug("MenuAgent : start() : will change UP");
                             changeCurrentStation(UP);
                             refreshClientsMenu();
-                            debug("MenuAgent : start() : changed UP");
                             clientState[i] = START;
                         } else if (clientState[i] == DOWN) {
-                            debug("MenuAgent : start() : will change DOWN");
                             changeCurrentStation(DOWN);
                             refreshClientsMenu();
-                            debug("MenuAgent : start() : changed DOWN");
                             clientState[i] = START;
                         }
                     }
@@ -206,7 +198,7 @@ void MenuAgent::telnetSendMenu(int sock) {
        "------------------------------------------------------------------------\r\n";
 
     // stations with indicator:
-    debug("MenuAgent : telnetSendMenu : LOCKING receiver->mut");
+//    debug("MenuAgent : telnetSendMenu : LOCKING receiver->mut");
     receiver->controlMutex.lock();
     receiver->stationListMutex.lock();
 
@@ -223,22 +215,24 @@ void MenuAgent::telnetSendMenu(int sock) {
     }
     receiver->controlMutex.unlock();
     receiver->stationListMutex.unlock();
-    debug("MenuAgent : telnetSendMenu : UNLOCKED receiver->mut");
+//    debug("MenuAgent : telnetSendMenu : UNLOCKED receiver->mut");
 
     // bottom:
     ss << "------------------------------------------------------------------------\r\n";
 
     // Send all string to client's telnet socket:
     std::string text = ss.str();
-    if (text.length() != write(sock, text.c_str(), text.length()))
-        std::cerr << "Could not send menu to client on socket " << sock << std::endl;
+    if (text.length() != write(sock, text.c_str(), text.length())) {
+//        std::cerr << "Could not send menu to client on socket " << sock << std::endl;
+    }
 
 }
 
 void MenuAgent::telnetSendClearScreen(int sock) {
     char clear[32] = "\033[2J\033[0;0H"; // clear terminal, move to left upper corner
-    if(32 != write(sock, clear, 32))
-        std::cerr << "Could not send clear screen to client on socket " << sock <<std::endl;
+    if(32 != write(sock, clear, 32)) {
+//        std::cerr << "Could not send clear screen to client on socket " << sock <<std::endl;
+    }
 }
 
 void MenuAgent::telnetSendInitialSettings(int sock) {
@@ -249,9 +243,10 @@ void MenuAgent::telnetSendInitialSettings(int sock) {
 
     if (3 != write(sock, iacDoLinemode, 3)
         or 7 != write(sock, iacSbLinemodeMode0IacSe, 7)
-        or 3!= write(sock, iacWillEcho, 3))
-        std::cerr << "Could not send initial command to cliend on socket " <<
-            sock << std::endl;
+        or 3!= write(sock, iacWillEcho, 3)) {
+//        std::cerr << "Could not send initial command to cliend on socket " <<
+//                  sock << std::endl;
+    }
 }
 
 void MenuAgent::refreshClientsMenu() {
@@ -267,13 +262,13 @@ void MenuAgent::changeCurrentStation(State cmd) {
     receiver->controlMutex.lock();
     receiver->stationListMutex.lock();
 
-    debug("MenuAgent : changecurrentStation : locked mutexes");
+//    debug("MenuAgent : changecurrentStation : locked mutexes");
 
     // If current station is not selected try to set first station from list
     // as current.
     if(not receiver->stationIsSet) {
-        debug("MenuAgent : changecurrentStation : station was not set, "
-              "setting");
+//        debug("MenuAgent : changecurrentStation : station was not set, "
+//              "setting");
         setFirstStationAsCurrent();
     }
 
@@ -283,9 +278,9 @@ void MenuAgent::changeCurrentStation(State cmd) {
         for (auto iter = receiver->stationList.begin();
                                 iter != receiver->stationList.end(); iter++) {
             if (iter == receiver->currentStation) {
-                debug("MenuAgent : changecurrentStation : found current "
-                      "station, it is %s",
-                      receiver->currentStation->stationName.c_str());
+//                debug("MenuAgent : changecurrentStation : found current "
+//                      "station, it is %s",
+//                      receiver->currentStation->stationName.c_str());
 
                 switch (cmd) {
                     case UP:
@@ -299,10 +294,10 @@ void MenuAgent::changeCurrentStation(State cmd) {
                     default:
                         assert(true);
                 }
-                debug("MenuAgent : changecurrentStation : changed current "
-                      "station, now it is %s",
-                      receiver->currentStation->stationName.c_str());
-                receiver->state = STATION_CHANGED;
+//                debug("MenuAgent : changecurrentStation : changed current "
+//                      "station, now it is %s",
+//                      receiver->currentStation->stationName.c_str());
+//                receiver->state = STATION_CHANGED;
                 break;
 
             }
@@ -311,7 +306,7 @@ void MenuAgent::changeCurrentStation(State cmd) {
 
     receiver->controlMutex.unlock();
     receiver->stationListMutex.unlock();
-    debug("MenuAgent : changecurrentStation : unlocked mutexes");
+//    debug("MenuAgent : changecurrentStation : unlocked mutexes");
 
 }
 

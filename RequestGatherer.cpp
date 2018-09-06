@@ -12,9 +12,9 @@
 
 
 void RequestGatherer::start() {
-    debug("RequestGatherer : start() : beginning");
+//    debug("RequestGatherer : start() : beginning");
     initializeSocket();
-    debug("RequestGatherer : start() : after socket initialization");
+//    debug("RequestGatherer : start() : after socket initialization");
 
     char buf[800000];
 
@@ -28,7 +28,7 @@ void RequestGatherer::start() {
 
         if (recv_len < 1) {
             // Just ignore if some error occurs, he will send another packages
-            debug("RequestGatherer : start() : recv_len < 1");
+//            debug("RequestGatherer : start() : recv_len < 1");
         }
         else {
             // There is a message in buffer, lets unpack it:
@@ -40,21 +40,21 @@ void RequestGatherer::start() {
                 // tmp should contain now name of message:
                 if (tmp == LOOKUP_MESSAGE) {
                     // Its cyclic lookup message.
-                    debug("RequestGatherer : start() : before sending reply "
-                          "message");
+//                    debug("RequestGatherer : start() : before sending reply "
+//                          "message");
                     sendReplyMessage(sender_addr);
-                    debug("RequestGatherer : start() : after sending reply "
-                          "message");
+//                    debug("RequestGatherer : start() : after sending reply "
+//                          "message");
                 }
 
                 else if (tmp == REXMIT_MESSAGE) {
                     // Message is retransmission request in form
                     // e.g LOUDER_PLEASE 512,1024,1536,5632,3584
-                    debug("RequestGatherer : start() : before sending "
-                          "rexmit message");
+//                    debug("RequestGatherer : start() : before sending "
+//                          "rexmit message");
                     sendRexmitMessage(iss);
-                    debug("RequestGatherer : start() : after sending "
-                          "rexmit message");
+//                    debug("RequestGatherer : start() : after sending "
+//                          "rexmit message");
                 }
             }
         }
@@ -120,15 +120,16 @@ void RequestGatherer::sendReplyMessage(struct sockaddr_in &sender_addr) {
     reply += STATION_NAME;
     reply += "\n"; // TODO czy na pewno?
 
-    debug("RequestGatherer : sendReplyMessage() : messageToSend:_%s_", reply.c_str());
+//    debug("RequestGatherer : sendReplyMessage() : messageToSend:_%s_", reply.c_str());
 
     socklen_t sender_addr_len = sizeof(sender_addr);
     auto snd_len = sendto(sock, reply.c_str(), reply.length(), 0,
                           (struct sockaddr *) &sender_addr, sender_addr_len);
     if (snd_len != (ssize_t) reply.length()) {
-        debug("RequestGatherer : sendReplyMessage() : partial/failed send");
+//        debug("RequestGatherer : sendReplyMessage() : partial/failed send");
 
         // syserr("partial / failed write");
+
         // Ignoring, he will send again and we will try again.
     }
 }

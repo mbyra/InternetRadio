@@ -237,20 +237,21 @@ void StationFinder::replyParserService() {
 }
 
 void StationFinder::start() {
-    debug("StationFinder : start() : beginning");
+//    debug("StationFinder : start() : beginning");
     initCtrlSocket();
-    debug("StationFinder : start() : after initializing a socket");
+//    debug("StationFinder : start() : after initializing a socket");
 
     // run replyParser service in separate thread
     std::thread replyParserServiceThread([this]() {replyParserService(); });
     replyParserServiceThread.detach();
-    debug("StationFinder : start() : replyParserService started in separate "
-          "thread");
+//    debug("StationFinder : start() : replyParserService started in separate "
+//          "thread");
 
-    debug("StationFinder : start() : starting searchStationService in this "
-          "thread");
+//    debug("StationFinder : start() : starting searchStationService in this "
+//          "thread");
+
     // in current thread run searchStation service
     searchStationService();
-    debug("StationFinder : start() : finished searchStationService");
+//    debug("StationFinder : start() : finished searchStationService");
 
 }
